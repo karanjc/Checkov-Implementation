@@ -19,14 +19,14 @@ resource "aws_security_group" "secure_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["192.168.1.0/24"]
+    cidr_blocks = ["192.168.1.0/24"] # Restricting SSH access to a known IP range
   }
 
   egress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["192.168.1.0/24"] # Allow restricted egress
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["192.168.1.0/24"] # Restricting egress to specific CIDR
   }
 
   tags = {
@@ -38,13 +38,11 @@ resource "aws_kms_key" "db_kms" {
   description             = "KMS key for encrypting RDS data"
   deletion_window_in_days = 30
 
+  enable_key_rotation     = true # Enable automatic key rotation
+
   tags = {
     Name = "DatabaseKMSKey"
   }
-}
-
-resource "aws_kms_key_rotation" "db_kms_rotation" {
-  key_id = aws_kms_key.db_kms.id
 }
 
 resource "aws_db_instance" "example" {
