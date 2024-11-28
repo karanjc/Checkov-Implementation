@@ -1,21 +1,22 @@
+# main.tf
+
 provider "aws" {
-  region     = "us-west-2"
-  access_key = "AKIAIOSFODNN7EXAMPLE"       # Vulnerability: Hardcoded AWS Access Key
-  secret_key = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" # Vulnerability: Hardcoded AWS Secret Key
+  region = "us-west-2"
+  # Use environment variables or an AWS credentials profile for secure access
 }
 
 resource "aws_s3_bucket" "example" {
   bucket = "example-bucket"
-  acl    = "public-read"  # Vulnerability: Public read access
+  acl    = "private"  # Fix: Set access control to private
 
   versioning {
-    enabled = false  # Vulnerability: Versioning not enabled
+    enabled = true  # Fix: Enable versioning to prevent accidental data loss
   }
 
   server_side_encryption_configuration {
     rule {
       apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
+        sse_algorithm = "AES256"  # Fix: Ensure server-side encryption is enabled
       }
     }
   }
@@ -26,14 +27,14 @@ resource "aws_s3_bucket" "example" {
   }
 }
 
-resource "aws_security_group" "insecure_sg" {
-  name_prefix = "insecure-sg-"
+resource "aws_security_group" "secure_sg" {
+  name_prefix = "secure-sg-"
 
   ingress {
-    from_port   = 0
-    to_port     = 65535
+    from_port   = 22
+    to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # Vulnerability: Open to the world
+    cidr_blocks = ["192.168.1.0/24"]  # Fix: Restrict access to a specific IP range
   }
 
   egress {
@@ -44,7 +45,7 @@ resource "aws_security_group" "insecure_sg" {
   }
 
   tags = {
-    Name = "insecure-security-group"
+    Name = "secure-security-group"
   }
 }
 
@@ -54,14 +55,26 @@ resource "aws_db_instance" "example" {
   engine_version       = "5.7"
   instance_class       = "db.t2.micro"
   name                 = "exampledb"
-  username             = "admin"
-  password             = "hardcoded-password" # Vulnerability: Hardcoded database password
-  publicly_accessible  = true                 # Vulnerability: Publicly accessible database
-  skip_final_snapshot  = true                 # Vulnerability: Final snapshot skipped
+  username             = var.db_username  # Fix: Use a variable for sensitive data
+  password             = var.db_password  # Fix: Use a variable for sensitive data
+  publicly_accessible  = false            # Fix: Make the database private
+  skip_final_snapshot  = false            # Fix: Ensure a final snapshot is taken on deletion
 
   tags = {
     Name = "ExampleDatabase"
   }
 }
 
-#25
+variable "db_username" {
+  description = "Database username"
+  type        = string
+}
+
+variable "db_password" {
+  description = "Database password"
+  type        = string
+}
+
+output "bucket_name" {
+  value = aws_s3_bucket.example.bucket
+}
