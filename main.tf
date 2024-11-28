@@ -60,6 +60,9 @@ resource "aws_db_instance" "example" {
   kms_key_id                 = aws_kms_key.db_kms.arn
   enabled_cloudwatch_logs_exports = ["error", "general", "slowquery", "audit"]
 
+  # Enable IAM database authentication
+  iam_database_authentication_enabled = true
+
   tags = {
     Name = "ExampleDatabase"
   }
